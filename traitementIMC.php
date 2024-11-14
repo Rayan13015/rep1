@@ -1,25 +1,68 @@
+
+
 <?php
 
-$codes=array("rayan"=>"motdepasse1","nico"=>"motdepasse2","souf"=>"motdepasse3","reda"=>"motdepasse4","loan"=>"motdepasse5","lucas"=>"motdepasse6");
+if (isset($_POST['poids']) && isset($_POST['taille'])) {
 
-$mot_de_passe_utilisateur=$_POST['password'];
-$acces_autorise=false;
+    // On sécurise les données
 
-foreach($codes as $cle => $valeur) {
-    if ($mot_de_passe_utilisateur === $valeur){
-        $acces_autorise = true;
-        break;
+    $poids = (float) htmlspecialchars($_POST['poids']);
+
+    $taille = (float) htmlspecialchars($_POST['taille']);
+
+
+    if ($poids > 0 && $taille > 0) {
+
+        // Calcul de l'IMC
+
+        $imc = $poids / ($taille * $taille);
+
+        echo 'Votre IMC est de ' . number_format($imc, 2) . '<br>';
+
+
+        // Interprétation de l'IMC selon l'OMS
+
+        echo '<h2>Indice de masse corporelle (IMC) - Interprétation</h2>';
+
+        if ($imc < 18.5) {
+
+            echo 'Insuffisance pondérale (maigreur)';
+
+        } elseif ($imc >= 18.5 && $imc < 25) {
+
+            echo 'Corpulence normale';
+
+        } elseif ($imc >= 25 && $imc < 30) {
+
+            echo 'Surpoids';
+
+        } elseif ($imc >= 30 && $imc < 35) {
+
+            echo 'Obésité modérée';
+
+        } elseif ($imc >= 35 && $imc < 40) {
+
+            echo 'Obésité sévère';
+
+        } else {
+
+            echo 'Obésité morbide ou massive';
+
+        }
+
+    } else {
+
+        echo 'Veuillez entrer des valeurs positives pour le poids et la taille.';
+
     }
+
+} else {
+
+    echo 'Formulaire non soumis correctement.';
+
 }
-if($acces_autorise){
-    echo "Bienvenue";
-}else{
-    echo "ACCES REFUSER";
-}
+
 ?>
-
-
-
 
 
 
