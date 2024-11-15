@@ -1,112 +1,132 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
-<title>Recherche Étudiants</title>
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        background-color: #f4f4f9;
-        color: #333;
-        margin: 0;
-        padding: 20px;
-    }
-    form {
-        background: #fff;
-        padding: 20px;
-        border-radius: 5px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        max-width: 600px;
-        margin: 0 auto;
-    }
-    label {
-        display: block;
-        margin-top: 10px;
-    }
-    input[type="text"], input[type="number"], select {
-        width: 100%;
-        padding: 8px;
-        margin-top: 5px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-    }
-    button {
-        margin-top: 20px;
-        background-color: #4CAF50;
-        color: white;
-        border: none;
-        padding: 10px 15px;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-    button:hover {
-        background-color: #45a049;
-    }
-    table {
-        width: 100%;
-        margin-top: 20px;
-        border-collapse: collapse;
-    }
-    table th, table td {
-        border: 1px solid #ddd;
-        padding: 8px;
-        text-align: left;
-    }
-    table th {
-        background-color: #f2f2f2;
-    }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recherche Personne</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+        input[type="text"], button {
+            padding: 10px;
+            margin: 5px 0;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            outline: none;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table th, table td {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        table th {
+            background-color: #f4f4f4;
+        }
+        table tr:hover {
+            background-color: #f1f1f1;
+        }
+    </style>
 </head>
 <body>
-    <form method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>">
-        <fieldset>
-            <legend><strong>Recherche Étudiants</strong></legend>
-            <label>Ville :</label>
-            <input type="text" name="ville" placeholder="Ex : Paris" />
-            <label>Identifiant (matricule) minimum :</label>
-            <input type="number" step="1" name="id_client" placeholder="Ex : 100" />
+    <div class="container">
+        <h1>Recherche Personne</h1>
+        <form method="post" action="">
+            <label for="search">Rechercher par nom, prénom, matricule ou ville :</label>
+            <input type="text" id="search" name="search" placeholder="Entrez un critère..." required>
             <button type="submit">Rechercher</button>
-        </fieldset>
-    </form>
+        </form>
+        
+        <?php
+        if ($_SERVER["REQUEST_METHOD"] === "POST" && !empty($_POST["search"])) {
+            // Récupération du critère
+            $search = strtolower(trim($_POST["search"]));
 
-    <?php
-    if (isset($_POST['ville']) || isset($_POST['id_client'])) {
-        $ville = strtolower($_POST['ville'] ?? '');
-        $id_client = $_POST['id_client'] ?? 0;
+            // Inclusion du fichier de connexion
+            include("connexion.php");
+            $idcom = connexpdo('magasin', 'myparam');
 
-        include("connexion.php");
-        $idcom = connexpdo('magasin', 'myparam');
+            // Préparation de la requête
+            $reqprep = $idcom->prepare("
+                SELECT nom, prenom, matricule, ville
+                FROM client
+                WHERE lower(nom) LIKE :search
+                   OR lower(prenom) LIKE :search
+                   OR lower(ville) LIKE :search
+                   OR matricule LIKE :search
+            ");
 
-        $reqprep = $idcom->prepare(
-            "SELECT prenom, nom, matricule 
-             FROM etudiants 
-             WHERE lower(ville) LIKE :ville 
-             AND matricule >= :id_client"
-        );
+            // Liaison des paramètres
+            $reqprep->bindValue(':search', "%$search%", PDO::PARAM_STR);
+            $reqprep->execute();
 
-        $reqprep->bindValue(':ville', "%$ville%", PDO::PARAM_STR);
-        $reqprep->bindValue(':id_client', $id_client, PDO::PARAM_INT);
-        $reqprep->execute();
+            // Affichage des résultats
+            $results = $reqprep->fetchAll(PDO::FETCH_ASSOC);
 
-        $results = $reqprep->fetchAll(PDO::FETCH_ASSOC);
-        echo "<div><h3>Résultats trouvés : " . count($results) . "</h3></div>";
-
-        if ($results) {
-            echo "<table><thead><tr><th>Prénom</th><th>Nom</th><th>Matricule</th></tr></thead><tbody>";
-            foreach ($results as $row) {
-                echo "<tr>
-                        <td>" . htmlspecialchars($row['prenom']) . "</td>
-                        <td>" . htmlspecialchars($row['nom']) . "</td>
-                        <td>" . htmlspecialchars($row['matricule']) . "</td>
-                      </tr>";
+            if ($results) {
+                echo "<table>";
+                echo "<thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Prénom</th>
+                            <th>Matricule</th>
+                            <th>Ville</th>
+                        </tr>
+                      </thead>";
+                echo "<tbody>";
+                foreach ($results as $row) {
+                    echo "<tr>
+                            <td>" . htmlspecialchars($row['nom']) . "</td>
+                            <td>" . htmlspecialchars($row['prenom']) . "</td>
+                            <td>" . htmlspecialchars($row['matricule']) . "</td>
+                            <td>" . htmlspecialchars($row['ville']) . "</td>
+                          </tr>";
+                }
+                echo "</tbody>";
+                echo "</table>";
+            } else {
+                echo "<p>Aucun résultat trouvé pour le critère recherché.</p>";
             }
-            echo "</tbody></table>";
-        } else {
-            echo "<p>Aucun étudiant ne correspond à votre recherche.</p>";
-        }
 
-        $idcom = null;
-    }
-    ?>
+            $reqprep->closeCursor();
+            $idcom = null;
+        }
+        ?>
+    </div>
 </body>
 </html>
